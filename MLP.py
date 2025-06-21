@@ -88,8 +88,6 @@ def train(feats_file, labels_file, save_path):
 def val(feats_file, labels_file, save_path):
 
   batch_size = 16
-  input_size = 384
-  n_classes = 20
 
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   print(f"Using device: {device}")
@@ -111,13 +109,15 @@ def val(feats_file, labels_file, save_path):
 
   val_loader = DataLoader(dataset, shuffle=True, batch_size=batch_size)
 
-  model = Simple_model(input_size, n_classes)
+  model = Simple_model(features.shape[1], len(label_encoder.classes_))
   model.load_state_dict(torch.load(save_path, map_location=device))
 
   loss_fn = nn.CrossEntropyLoss()
 
   model.to(device)
   model.eval()
+
+  correct_per_class = {label: [0, 0] for label in label_encoder.classes_} #[TP, Total]
 
   with torch.no_grad():
     TP = 0
@@ -129,26 +129,39 @@ def val(feats_file, labels_file, save_path):
       labels = labels.to(device=device, dtype=torch.long)
 
       outputs = model(inputs)
-      TP += (torch.argmax(outputs, dim=1) == labels).sum().item()
+      predictions = torch.argmax(outputs, dim=1)
+
+      TP += (predictions == labels).sum().item()
       loss += loss_fn(outputs, labels).item()
+
+      for i in range(len(labels)):
+        label = label_encoder.classes_[labels[i].item()]
+        pred = label_encoder.classes_[predictions[i].item()]
+        
+        correct_per_class[label][1] += 1
+        if label == pred:
+          correct_per_class[label][0] += 1
+
       
-    print(f"Loss = {(loss/len(val_loader)):.4f}\nAcc = {TP/features.shape[0]}")
+    print(f"Loss = {(loss/len(val_loader)):.4f}\nOverall accuracy = {TP/features.shape[0]}")
+    for key, val in correct_per_class.items():
+      print(f"'{key}' Class accuracy: {(val[0]/val[1]):.4f}")
 
 ## ------------------------------------------------------------------------- ##
 
 DATASET = 'VocVal'
-MODEL = 'dinov2'
+MODEL = 'DINOv2'
 DATA_DIR = 'VocPascal'
 
-FEATS_FILE_TRAIN = f'data/feat_{MODEL}_{DATASET}.npy'
-LABELS_FILE_TRAIN = f'data/labels_{MODEL}_{DATASET}.txt'
+FEATS_FILE_TRAIN = f'data/feat_{MODEL}_{DATASET}_train.npy'
+LABELS_FILE_TRAIN = f'data/labels_{MODEL}_{DATASET}_train.txt'
 
 FEATS_FILE_VAL = f'data/feat_{MODEL}_{DATASET}.npy'
 LABELS_FILE_VAL = f'data/labels_{MODEL}_{DATASET}.txt'
 
 SAVE_PATH = f'data/MLP_{MODEL}.pth'
 
-option = int(input("- 1: Train MLP\n- 2:Evaluate\n"))
+option = int(input("- 1: Train MLP\n- 2: Evaluate\n"))
 
 if option == 1 and os.path.isfile(FEATS_FILE_TRAIN) and os.path.isfile(LABELS_FILE_TRAIN):
   print("Feature vectors and labels found")
