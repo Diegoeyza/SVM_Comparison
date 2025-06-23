@@ -14,7 +14,7 @@ IMAGE_DIR = os.path.join(DATA_DIR, 'JPEGImages')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
-opt1 = int(input("Select model:\n-1: ResNet34\n-2: DINOv2\n- 3: CLIP"))
+opt1 = int(input("Select model:\n-1: ResNet34\n-2: DINOv2\n- 3: CLIP\n--->  "))
 if opt1 == 1:
     MODEL = 'ResnNet34'
     model = models.resnet34(pretrained=True).to(device)
@@ -35,7 +35,7 @@ elif opt1 == 3:
 else:
     print("Invalid")
 
-opt2 = int(input("1- Training data\n2- Validation data"))
+opt2 = int(input("1- Training data\n2- Validation data\n--->    "))
 if opt2 == 1:
     IM_FILE = os.path.join(DATA_DIR, 'train_voc.txt')
     FEATS_FILE = f'data/feat_{MODEL}_{DATASET}_train.npy'
