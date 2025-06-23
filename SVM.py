@@ -27,6 +27,22 @@ def train_svm(feats_file, labels_file, save_path):
 
 ## ------------------------------------------------------------------------- ##
 
+def acc_per_class(predictions, encoded_labels, label_encoder):
+    correct_per_class = {label: [0, 0] for label in label_encoder.classes_}
+
+    for idx, pred in enumerate(predictions):
+        prediction = label_encoder.classes_[pred]
+        label = label_encoder.classes_[encoded_labels[idx]]
+
+        correct_per_class[label][1] += 1
+        if label == prediction:
+          correct_per_class[label][0] += 1
+
+    for key, val in correct_per_class.items():
+      print(f"'{key}' Class accuracy: {(val[0]/val[1]):.4f}")
+
+## ------------------------------------------------------------------------- ##
+
 def val_svm(feats_file, labels_file, save_path):
     print("Evaluating SVM...")
 
@@ -48,6 +64,7 @@ def val_svm(feats_file, labels_file, save_path):
 
     print("\nPer-class performance:")
     print(classification_report(encoded_labels, predictions, target_names=label_encoder.classes_))
+    acc_per_class(predictions, encoded_labels, label_encoder)
 
 ## ------------------------------------------------------------------------- ##
 

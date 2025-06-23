@@ -5,6 +5,7 @@ from sklearn.preprocessing import LabelEncoder
 
 import os
 import numpy as np
+import joblib
 
 class Simple_model(nn.Module):
   def __init__(self, input_size, n_classes):
@@ -80,6 +81,7 @@ def train(feats_file, labels_file, save_path):
     print(f"Trained epoch {epoch + 1} / {epochs}\nLoss = {(epoch_loss/len(train_loader)):.4f}\nAcc = {TP/features.shape[0]}")
 
   torch.save(model.state_dict(), save_path)
+  joblib.dump({"label_encoder": label_encoder}, f"{save_path}_label_encoder")
 
   print(f"Model saved to: {save_path}")
 
@@ -93,14 +95,14 @@ def val(feats_file, labels_file, save_path):
   print(f"Using device: {device}")
 
   features = np.load(feats_file)
-  label_encoder = LabelEncoder()
+  label_encoder = joblib.load(f"{save_path}_label_encoder")['label_encoder']
   labels = []
 
   with open(labels_file, "r") as f:
       for line in f:
           labels.append(line.strip())
   
-  encoded_labels = label_encoder.fit_transform(labels)
+  encoded_labels = label_encoder.transform(labels)
 
   features_tensor = torch.from_numpy(features).float()
   labels_tensor = torch.from_numpy(encoded_labels).long()
