@@ -16,7 +16,7 @@ print(f"Using device: {device}")
 
 opt1 = int(input("Select model:\n-1: ResNet34\n-2: DINOv2\n- 3: CLIP\n--->  "))
 if opt1 == 1:
-    MODEL = 'ResnNet34'
+    MODEL = 'ResNet34'
     model = models.resnet34(pretrained=True).to(device)
     model.fc = torch.nn.Identity() 
     dim = 512

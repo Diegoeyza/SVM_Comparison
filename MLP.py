@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader, random_split, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset
 from sklearn.preprocessing import LabelEncoder
 
 import os
@@ -42,6 +42,7 @@ def train(feats_file, labels_file, save_path):
           labels.append(line.strip())
   
   encoded_labels = label_encoder.fit_transform(labels)
+  print(labels)
 
   features_tensor = torch.from_numpy(features).float()
   labels_tensor = torch.from_numpy(encoded_labels).long()
@@ -81,13 +82,13 @@ def train(feats_file, labels_file, save_path):
     print(f"Trained epoch {epoch + 1} / {epochs}\nLoss = {(epoch_loss/len(train_loader)):.4f}\nAcc = {TP/features.shape[0]}")
 
   torch.save(model.state_dict(), save_path)
-  joblib.dump({"label_encoder": label_encoder}, f"{save_path}_label_encoder")
+  joblib.dump({"label_encoder": label_encoder}, f"{save_path[:4]}_label_encoder")
 
   print(f"Model saved to: {save_path}")
 
 ## ------------------------------------------------------------------------- ##
 
-def val(feats_file, labels_file, save_path):
+def val(feats_file, labels_file, save_path, acc_path):
 
   batch_size = 16
 
@@ -95,7 +96,7 @@ def val(feats_file, labels_file, save_path):
   print(f"Using device: {device}")
 
   features = np.load(feats_file)
-  label_encoder = joblib.load(f"{save_path}_label_encoder")['label_encoder']
+  label_encoder = joblib.load(f"{save_path[:4]}_label_encoder")['label_encoder']
   labels = []
 
   with open(labels_file, "r") as f:
@@ -149,6 +150,8 @@ def val(feats_file, labels_file, save_path):
     for key, val in correct_per_class.items():
       print(f"'{key}' Class accuracy: {(val[0]/val[1]):.4f}")
 
+    np.save(acc_path, np.array([round((val[0]/val[1]), 4) for key, val in correct_per_class.items()]))
+
 ## ------------------------------------------------------------------------- ##
 
 DATASET = 'VocVal'
@@ -158,10 +161,11 @@ DATA_DIR = 'VocPascal'
 FEATS_FILE_TRAIN = f'data/feat_{MODEL}_{DATASET}_train.npy'
 LABELS_FILE_TRAIN = f'data/labels_{MODEL}_{DATASET}_train.txt'
 
-FEATS_FILE_VAL = f'data/feat_{MODEL}_{DATASET}.npy'
-LABELS_FILE_VAL = f'data/labels_{MODEL}_{DATASET}.txt'
+FEATS_FILE_VAL = f'data/feat_{MODEL}_{DATASET}_val.npy'
+LABELS_FILE_VAL = f'data/labels_{MODEL}_{DATASET}_val.txt'
 
 SAVE_PATH = f'data/MLP_{MODEL}.pth'
+ACC_PATH = f'data/ACC_MLP_{MODEL}.npy'
 
 option = int(input("- 1: Train MLP\n- 2: Evaluate\n"))
 
@@ -171,7 +175,7 @@ if option == 1 and os.path.isfile(FEATS_FILE_TRAIN) and os.path.isfile(LABELS_FI
 
 elif option == 2 and os.path.isfile(FEATS_FILE_VAL) and os.path.isfile(LABELS_FILE_VAL):
   print("Feature vectors and labels found")
-  val(FEATS_FILE_VAL, LABELS_FILE_VAL, SAVE_PATH)
+  val(FEATS_FILE_VAL, LABELS_FILE_VAL, SAVE_PATH, ACC_PATH)
   
 else:
   print("Feature vectors and labels not found")

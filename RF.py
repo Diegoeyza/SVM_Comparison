@@ -9,19 +9,21 @@ import joblib
 
 ## ------------------------------------------------------------------------- ##
 
-def acc_per_class(predictions, encoded_labels, label_encoder):
+def acc_per_class(predictions, encoded_labels, label_encoder, acc_path):
     correct_per_class = {label: [0, 0] for label in label_encoder.classes_}
 
     for idx, pred in enumerate(predictions):
-        prediction = label_encoder.classes_[pred]
-        label = label_encoder.classes_[encoded_labels[idx]]
+      prediction = label_encoder.classes_[pred]
+      label = label_encoder.classes_[encoded_labels[idx]]
 
-        correct_per_class[label][1] += 1
-        if label == prediction:
-          correct_per_class[label][0] += 1
+      correct_per_class[label][1] += 1
+      if label == prediction:
+        correct_per_class[label][0] += 1
 
     for key, val in correct_per_class.items():
       print(f"'{key}' Class accuracy: {(val[0]/val[1]):.4f}")
+    
+    np.save(acc_path, np.array([round((val[0]/val[1]), 4) for key, val in correct_per_class.items()]))
 
 ## ------------------------------------------------------------------------- ##
 
@@ -39,8 +41,8 @@ def train(feats_file, labels_file, save_path):
 
     # Se supone que uno pone los params aca y grid search te cacha los que mejores funcionan
     param_grid = {
-    'n_estimators': [1002],
-    'max_depth': [20],
+    'n_estimators': [200],
+    'max_depth': [50],
     'min_samples_split': [2]
     }
 
@@ -54,7 +56,7 @@ def train(feats_file, labels_file, save_path):
 
 ## ------------------------------------------------------------------------- ##
 
-def val(feats_file, labels_file, save_path):
+def val(feats_file, labels_file, save_path, acc_path):
     print("Evaluating RF...")
 
     features = np.load(feats_file)
@@ -75,21 +77,22 @@ def val(feats_file, labels_file, save_path):
 
     print("\nPer-class performance:")
     print(classification_report(encoded_labels, predictions, target_names=label_encoder.classes_))
-    acc_per_class(predictions, encoded_labels, label_encoder)
+    acc_per_class(predictions, encoded_labels, label_encoder, acc_path)
 
 ## ------------------------------------------------------------------------- ##
 
 DATASET = 'VocVal'
-MODEL = 'DINOv2'
+MODEL = 'CLIP'
 DATA_DIR = 'VocPascal'
 
 FEATS_FILE_TRAIN = f'data/feat_{MODEL}_{DATASET}_train.npy'
 LABELS_FILE_TRAIN = f'data/labels_{MODEL}_{DATASET}_train.txt'
 
-FEATS_FILE_VAL = f'data/feat_{MODEL}_{DATASET}.npy'
-LABELS_FILE_VAL = f'data/labels_{MODEL}_{DATASET}.txt'
+FEATS_FILE_VAL = f'data/feat_{MODEL}_{DATASET}_val.npy'
+LABELS_FILE_VAL = f'data/labels_{MODEL}_{DATASET}_val.txt'
 
 SAVE_PATH = f'data/RF_{MODEL}.pth'
+ACC_PATH = f'data/ACC_RF_{MODEL}.npy'
 
 option = int(input("- 1: Train RF\n- 2: Evaluate\n"))
 
@@ -99,7 +102,7 @@ if option == 1 and os.path.isfile(FEATS_FILE_TRAIN) and os.path.isfile(LABELS_FI
 
 elif option == 2 and os.path.isfile(FEATS_FILE_VAL) and os.path.isfile(LABELS_FILE_VAL):
   print("Feature vectors and labels found")
-  val(FEATS_FILE_VAL, LABELS_FILE_VAL, SAVE_PATH)
+  val(FEATS_FILE_VAL, LABELS_FILE_VAL, SAVE_PATH, ACC_PATH)
   
 else:
   print("Feature vectors and labels not found")
