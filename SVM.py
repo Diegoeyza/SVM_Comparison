@@ -2,8 +2,10 @@ import os
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.svm import SVC
-from sklearn.metrics import classification_report, accuracy_score
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
 import joblib
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 ## ------------------------------------------------------------------------- ##
 
@@ -68,10 +70,17 @@ def val_svm(feats_file, labels_file, save_path, acc_path):
     print(classification_report(encoded_labels, predictions, target_names=label_encoder.classes_))
     acc_per_class(predictions, encoded_labels, label_encoder, acc_path)
 
+    sns.heatmap(confusion_matrix(encoded_labels, predictions), annot=True, fmt='d', cmap='Blues', xticklabels=label_encoder.classes_, yticklabels=label_encoder.classes_)
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    plt.title('Confusion Matrix')
+    plt.savefig(f"plots/confusion_matrix.png", dpi=300, bbox_inches='tight')
+    plt.show()
+
 ## ------------------------------------------------------------------------- ##
 
 DATASET = 'VocVal'
-MODEL = 'CLIP'
+MODEL = 'DINOv2'
 DATA_DIR = 'VocPascal'
 
 FEATS_FILE_TRAIN = f'data/feat_{MODEL}_{DATASET}_train.npy'
